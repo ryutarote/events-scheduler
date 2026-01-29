@@ -1,0 +1,423 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* React Native Web - Required for flex layout to work properly */
+html, body, #__next {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100%;
+}
+
+/* React Native Web - Fix for View components with flex: 1 */
+[data-rnw-int-class~="r-flex-1"] {
+  flex: 1;
+}
+
+/* React Native Web - Ensure proper flexbox behavior */
+div[style*="flex"] {
+  display: flex;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #000000; /* Dark mode default */
+}
+
+/* Light mode override */
+@media (prefers-color-scheme: light) {
+  .app-container {
+    background-color: #f2f2f7;
+  }
+}
+
+/* iOS-style Tab Bar */
+.nav-tabs {
+  display: flex;
+  justify-content: center;
+  background-color: #1c1c1e; /* Dark mode default */
+  border-top: 0.5px solid #38383a;
+  padding: 8px 16px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+/* Light mode override */
+@media (prefers-color-scheme: light) {
+  .nav-tabs {
+    background-color: #f9f9f9;
+    border-top-color: #c6c6c8;
+  }
+}
+
+.nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 32px;
+  text-decoration: none;
+  color: #8e8e93;
+  font-weight: 500;
+  font-size: 10px;
+  transition: color 0.15s ease;
+  gap: 2px;
+}
+
+.nav-tab::before {
+  font-size: 24px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.nav-tab[href*="tasks"]::before {
+  content: '📅';
+}
+
+.nav-tab[href*="devices"]::before {
+  content: '📱';
+}
+
+.nav-tab:hover {
+  color: #ff3b30;
+}
+
+.nav-tab.active,
+.nav-tab:focus {
+  color: #ff3b30;
+  outline: none;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 80px; /* Space for fixed tab bar */
+}
+
+/* iOS Card Styles */
+.ios-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 0 16px 20px;
+  overflow: hidden;
+}
+
+.ios-card-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid #c6c6c8;
+}
+
+.ios-card-row:last-child {
+  border-bottom: none;
+}
+
+/* iOS Section Header */
+.ios-section-header {
+  font-size: 13px;
+  font-weight: 400;
+  color: #8e8e93;
+  text-transform: uppercase;
+  padding: 8px 32px;
+  letter-spacing: -0.08px;
+}
+
+/* iOS Large Title */
+.ios-large-title {
+  font-size: 34px;
+  font-weight: 700;
+  color: #000000;
+  padding: 12px 16px;
+  letter-spacing: 0.37px;
+}
+
+/* iOS Button Styles */
+.ios-button-primary {
+  background-color: #ff3b30;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.ios-button-primary:hover {
+  opacity: 0.85;
+}
+
+.ios-button-primary:disabled {
+  background-color: #ffb3b0;
+  cursor: not-allowed;
+}
+
+.ios-button-text {
+  background: none;
+  border: none;
+  color: #ff3b30;
+  font-size: 17px;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 8px 16px;
+}
+
+.ios-button-text:hover {
+  opacity: 0.7;
+}
+
+/* iOS Input Styles */
+.ios-input {
+  background-color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 17px;
+  color: #000000;
+  width: 100%;
+}
+
+.ios-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #ff3b30;
+}
+
+.ios-input::placeholder {
+  color: #c7c7cc;
+}
+
+/* iOS Switch/Toggle */
+.ios-switch {
+  appearance: none;
+  width: 51px;
+  height: 31px;
+  background-color: #e5e5ea;
+  border-radius: 16px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ios-switch::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.ios-switch:checked {
+  background-color: #ff3b30;
+}
+
+.ios-switch:checked::before {
+  transform: translateX(20px);
+}
+
+/* iOS List Separator */
+.ios-separator {
+  height: 0.5px;
+  background-color: #c6c6c8;
+  margin-left: 16px;
+}
+
+/* Empty State */
+.ios-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  text-align: center;
+}
+
+.ios-empty-icon {
+  font-size: 60px;
+  margin-bottom: 16px;
+}
+
+.ios-empty-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 8px;
+}
+
+.ios-empty-subtitle {
+  font-size: 15px;
+  color: #8e8e93;
+  line-height: 1.4;
+}
+
+/* iOS Badge */
+.ios-badge {
+  background-color: #ff3b30;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+/* Accent color utilities */
+.text-accent {
+  color: #ff3b30;
+}
+
+.bg-accent {
+  background-color: #ff3b30;
+}
+
+/* Safe area handling for iOS web */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .nav-tabs {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .main-content {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ================================================
+   React Native Web - Critical Style Overrides
+   ================================================ */
+
+/* Ensure all View components use flexbox by default */
+/* Note: Do NOT override flex-direction here - React Native Web sets it via inline styles */
+[data-rnw],
+[data-rnwrapper],
+div[class*="css-"] {
+  display: flex;
+  box-sizing: border-box;
+}
+
+/* Reset unwanted styles */
+div, span {
+  box-sizing: border-box;
+}
+
+/* Fix for flex: 1 on View components */
+[style*="flex: 1"],
+[style*="flex:1"] {
+  flex: 1 1 auto;
+}
+
+/* React Native Web atomic classes - flexbox */
+.r-flex-1 { flex: 1; }
+.r-flexDirection-column { flex-direction: column; }
+.r-flexDirection-row { flex-direction: row; }
+.r-alignItems-center { align-items: center; }
+.r-alignItems-stretch { align-items: stretch; }
+.r-justifyContent-center { justify-content: center; }
+.r-justifyContent-spaceBetween { justify-content: space-between; }
+.r-flexWrap-wrap { flex-wrap: wrap; }
+
+/* Fix for ScrollView */
+[data-rnw-int-class*="overflow"] {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix for Text components */
+[data-rnw-int-class*="Text"] {
+  display: inline;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Fix for Pressable/TouchableOpacity */
+[role="button"] {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Fix for TextInput */
+[data-rnw-int-class*="TextInput"] input,
+[data-rnw-int-class*="TextInput"] textarea {
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+/* Ensure proper stacking context */
+[style*="position: absolute"],
+[style*="position:absolute"] {
+  position: absolute;
+}
+
+[style*="position: fixed"],
+[style*="position:fixed"] {
+  position: fixed;
+}
+
+/* ================================================
+   React Native Web - Additional Fixes
+   ================================================ */
+
+/* Ensure View components inherit flex properly */
+/* Only set flex: 1 on first level children, don't override flex-direction */
+.main-content > div {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Fix for ScrollView overflow */
+[data-testid*="scroll"],
+div[style*="overflow"] {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure input fields are styled correctly */
+input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Fix flexbox on View wrapper - only ensure display flex, don't override direction */
+div[style*="backgroundColor"] {
+  display: flex;
+}
+
+/* Dark mode text colors */
+body {
+  color: #ffffff;
+  background-color: #000000;
+}
+
+@media (prefers-color-scheme: light) {
+  body {
+    color: #000000;
+    background-color: #f2f2f7;
+  }
+}
