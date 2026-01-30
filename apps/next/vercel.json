@@ -1,6 +1,8 @@
 {
-  "installCommand": "npm install -g pnpm && cd ../.. && pnpm install --frozen-lockfile",
+  "framework": "nextjs",
+  "installCommand": "npm install -g pnpm && cd ../.. && pnpm install",
   "buildCommand": "cd ../.. && pnpm run build --filter=@ticket-scheduler/next",
+  "outputDirectory": ".next",
   "crons": [
     {
       "path": "/api/push/schedule",
