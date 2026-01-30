@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd apps/next && pnpm run build",
+  "outputDirectory": "apps/next/.next",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/push/schedule",
+      "schedule": "* * * * *"
+    }
+  ]
+}
