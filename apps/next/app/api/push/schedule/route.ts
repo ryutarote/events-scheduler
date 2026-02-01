@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveSchedule, removeSchedule, getSchedules, checkAndSendDueNotifications } from '@/lib/push';
 
+// Force dynamic rendering to prevent static analysis issues with VAPID keys
+export const dynamic = 'force-dynamic';
+
 // GET - Check and send due notifications (Vercel Cron endpoint)
 export async function GET(request: NextRequest) {
   try {

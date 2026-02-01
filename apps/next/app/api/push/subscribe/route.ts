@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveSubscription, removeSubscription, getVapidPublicKey } from '@/lib/push';
 
+// Force dynamic rendering to prevent static analysis issues with VAPID keys
+export const dynamic = 'force-dynamic';
+
 // GET - Get VAPID public key
 export async function GET() {
   const publicKey = getVapidPublicKey();

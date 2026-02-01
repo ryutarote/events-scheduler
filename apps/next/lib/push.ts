@@ -2,14 +2,42 @@ import webpush from 'web-push';
 import fs from 'fs';
 import path from 'path';
 
-// VAPID configuration
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@example.com';
+// VAPID configuration - defer initialization to runtime
+let vapidConfigured = false;
 
-// Configure web-push
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+function getVapidConfig() {
+  return {
+    publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
+    privateKey: process.env.VAPID_PRIVATE_KEY || '',
+    subject: process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
+  };
+}
+
+function ensureVapidConfigured(): boolean {
+  if (vapidConfigured) return true;
+
+  const config = getVapidConfig();
+
+  // Validate that keys are present and appear to be valid base64
+  if (!config.publicKey || !config.privateKey) {
+    console.warn('[Push] VAPID keys not configured');
+    return false;
+  }
+
+  // Check for valid base64 URL-safe format (no padding)
+  if (config.publicKey.includes('=') || config.privateKey.includes('=')) {
+    console.warn('[Push] VAPID keys should be URL-safe base64 without padding');
+    return false;
+  }
+
+  try {
+    webpush.setVapidDetails(config.subject, config.publicKey, config.privateKey);
+    vapidConfigured = true;
+    return true;
+  } catch (error) {
+    console.error('[Push] Failed to configure VAPID:', error);
+    return false;
+  }
 }
 
 // Data storage paths
@@ -116,6 +144,11 @@ export async function sendPushNotification(
   subscription: PushSubscription,
   payload: { title: string; body: string; tag?: string }
 ): Promise<boolean> {
+  if (!ensureVapidConfigured()) {
+    console.error('[Push] Cannot send notification: VAPID not configured');
+    return false;
+  }
+
   try {
     await webpush.sendNotification(
       {
@@ -193,5 +226,5 @@ export async function checkAndSendDueNotifications(): Promise<number> {
 
 // Get VAPID public key
 export function getVapidPublicKey(): string {
-  return VAPID_PUBLIC_KEY;
+  return getVapidConfig().publicKey;
 }

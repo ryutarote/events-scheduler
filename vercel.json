@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm run build --filter=@ticket-scheduler/next",
-  "outputDirectory": "apps/next/.next",
   "installCommand": "pnpm install",
-  "framework": "nextjs",
+  "buildCommand": "cd apps/next && pnpm run build",
+  "outputDirectory": "apps/next/.next",
+  "framework": null,
   "crons": [
     {
       "path": "/api/push/schedule",
