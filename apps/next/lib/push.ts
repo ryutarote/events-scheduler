@@ -45,17 +45,22 @@ let redis: Redis | null = null;
 function getRedis(): Redis | null {
   if (redis) return redis;
 
-  // Support both naming conventions
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  // Support both naming conventions - trim to remove any newlines
+  const url = (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '').trim();
+  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '').trim();
 
   if (!url || !token) {
     console.warn('[Redis] Upstash Redis not configured. URL:', !!url, 'Token:', !!token);
     return null;
   }
 
-  redis = new Redis({ url, token });
-  return redis;
+  try {
+    redis = new Redis({ url, token });
+    return redis;
+  } catch (error) {
+    console.error('[Redis] Failed to create Redis client:', error);
+    return null;
+  }
 }
 
 // Redis keys

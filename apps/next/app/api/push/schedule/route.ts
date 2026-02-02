@@ -22,9 +22,10 @@ export async function GET(request: NextRequest) {
     console.log('[Cron] Check complete, sent:', sentCount, 'notifications');
     return NextResponse.json({ success: true, sentCount });
   } catch (error) {
-    console.error('[API] Failed to process request:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[API] Failed to process request:', errorMessage, error);
     return NextResponse.json(
-      { error: 'Failed to process request' },
+      { error: 'Failed to process request', details: errorMessage },
       { status: 500 }
     );
   }
