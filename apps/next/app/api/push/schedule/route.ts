@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     if (isDebug && !isCron) {
       // Debug mode: return schedules
-      const schedules = getSchedules();
+      const schedules = await getSchedules();
       return NextResponse.json({ schedules });
     }
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       createdAt: now.toISOString(),
     };
 
-    saveSchedule(schedule);
+    await saveSchedule(schedule);
 
     console.log(
       '[API] Notification scheduled for:',
@@ -111,7 +111,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    removeSchedule(taskId);
+    await removeSchedule(taskId);
     console.log('[API] Notification cancelled for task:', taskId);
     return NextResponse.json({ success: true });
   } catch (error) {

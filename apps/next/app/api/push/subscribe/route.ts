@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    saveSubscription({
+    await saveSubscription({
       endpoint: subscription.endpoint,
       keys: {
         p256dh: subscription.keys.p256dh,
@@ -53,7 +53,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    removeSubscription(endpoint);
+    await removeSubscription(endpoint);
     console.log('[API] Push subscription removed');
     return NextResponse.json({ success: true });
   } catch (error) {

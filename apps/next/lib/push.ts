@@ -1,6 +1,5 @@
 import webpush from 'web-push';
-import fs from 'fs';
-import path from 'path';
+import { Redis } from '@upstash/redis';
 
 // VAPID configuration - defer initialization to runtime
 let vapidConfigured = false;
@@ -40,17 +39,28 @@ function ensureVapidConfigured(): boolean {
   }
 }
 
-// Data storage paths
-const DATA_DIR = path.join(process.cwd(), 'data');
-const SUBSCRIPTIONS_FILE = path.join(DATA_DIR, 'subscriptions.json');
-const SCHEDULES_FILE = path.join(DATA_DIR, 'schedules.json');
+// Redis client - lazy initialization
+let redis: Redis | null = null;
 
-// Ensure data directory exists
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+function getRedis(): Redis | null {
+  if (redis) return redis;
+
+  // Support both naming conventions
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+
+  if (!url || !token) {
+    console.warn('[Redis] Upstash Redis not configured. URL:', !!url, 'Token:', !!token);
+    return null;
   }
+
+  redis = new Redis({ url, token });
+  return redis;
 }
+
+// Redis keys
+const SUBSCRIPTIONS_KEY = 'push:subscriptions';
+const SCHEDULES_KEY = 'push:schedules';
 
 // Types
 export interface PushSubscription {
@@ -72,71 +82,106 @@ export interface ScheduledNotification {
 }
 
 // Subscription management
-export function getSubscriptions(): PushSubscription[] {
-  ensureDataDir();
-  if (!fs.existsSync(SUBSCRIPTIONS_FILE)) {
-    return [];
-  }
+export async function getSubscriptions(): Promise<PushSubscription[]> {
+  const client = getRedis();
+  if (!client) return [];
+
   try {
-    const data = fs.readFileSync(SUBSCRIPTIONS_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch {
+    const data = await client.get<PushSubscription[]>(SUBSCRIPTIONS_KEY);
+    return data || [];
+  } catch (error) {
+    console.error('[Redis] Failed to get subscriptions:', error);
     return [];
   }
 }
 
-export function saveSubscription(subscription: PushSubscription): void {
-  ensureDataDir();
-  const subscriptions = getSubscriptions();
+export async function saveSubscription(subscription: PushSubscription): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
 
-  // Check if subscription already exists
-  const exists = subscriptions.some(s => s.endpoint === subscription.endpoint);
-  if (!exists) {
-    subscriptions.push(subscription);
-    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(subscriptions, null, 2));
+  try {
+    const subscriptions = await getSubscriptions();
+    const exists = subscriptions.some(s => s.endpoint === subscription.endpoint);
+
+    if (!exists) {
+      subscriptions.push(subscription);
+      await client.set(SUBSCRIPTIONS_KEY, subscriptions);
+      console.log('[Redis] Subscription saved');
+    }
+  } catch (error) {
+    console.error('[Redis] Failed to save subscription:', error);
   }
 }
 
-export function removeSubscription(endpoint: string): void {
-  ensureDataDir();
-  const subscriptions = getSubscriptions().filter(s => s.endpoint !== endpoint);
-  fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(subscriptions, null, 2));
+export async function removeSubscription(endpoint: string): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
+
+  try {
+    const subscriptions = await getSubscriptions();
+    const filtered = subscriptions.filter(s => s.endpoint !== endpoint);
+    await client.set(SUBSCRIPTIONS_KEY, filtered);
+    console.log('[Redis] Subscription removed');
+  } catch (error) {
+    console.error('[Redis] Failed to remove subscription:', error);
+  }
 }
 
 // Schedule management
-export function getSchedules(): ScheduledNotification[] {
-  ensureDataDir();
-  if (!fs.existsSync(SCHEDULES_FILE)) {
-    return [];
-  }
+export async function getSchedules(): Promise<ScheduledNotification[]> {
+  const client = getRedis();
+  if (!client) return [];
+
   try {
-    const data = fs.readFileSync(SCHEDULES_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch {
+    const data = await client.get<ScheduledNotification[]>(SCHEDULES_KEY);
+    return data || [];
+  } catch (error) {
+    console.error('[Redis] Failed to get schedules:', error);
     return [];
   }
 }
 
-export function saveSchedule(schedule: ScheduledNotification): void {
-  ensureDataDir();
-  const schedules = getSchedules();
+export async function saveSchedule(schedule: ScheduledNotification): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
 
-  // Remove any existing schedule for the same taskId
-  const filtered = schedules.filter(s => s.taskId !== schedule.taskId);
-  filtered.push(schedule);
-  fs.writeFileSync(SCHEDULES_FILE, JSON.stringify(filtered, null, 2));
+  try {
+    const schedules = await getSchedules();
+    // Remove any existing schedule for the same taskId
+    const filtered = schedules.filter(s => s.taskId !== schedule.taskId);
+    filtered.push(schedule);
+    await client.set(SCHEDULES_KEY, filtered);
+    console.log('[Redis] Schedule saved:', schedule.id);
+  } catch (error) {
+    console.error('[Redis] Failed to save schedule:', error);
+  }
 }
 
-export function removeSchedule(taskId: string): void {
-  ensureDataDir();
-  const schedules = getSchedules().filter(s => s.taskId !== taskId);
-  fs.writeFileSync(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
+export async function removeSchedule(taskId: string): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
+
+  try {
+    const schedules = await getSchedules();
+    const filtered = schedules.filter(s => s.taskId !== taskId);
+    await client.set(SCHEDULES_KEY, filtered);
+    console.log('[Redis] Schedule removed for task:', taskId);
+  } catch (error) {
+    console.error('[Redis] Failed to remove schedule:', error);
+  }
 }
 
-export function removeScheduleById(id: string): void {
-  ensureDataDir();
-  const schedules = getSchedules().filter(s => s.id !== id);
-  fs.writeFileSync(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
+export async function removeScheduleById(id: string): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
+
+  try {
+    const schedules = await getSchedules();
+    const filtered = schedules.filter(s => s.id !== id);
+    await client.set(SCHEDULES_KEY, filtered);
+  } catch (error) {
+    console.error('[Redis] Failed to remove schedule by id:', error);
+  }
 }
 
 // Send push notification
@@ -166,7 +211,7 @@ export async function sendPushNotification(
     // If subscription is invalid, remove it
     if (err.statusCode === 410 || err.statusCode === 404) {
       console.log('[Push] Subscription expired, removing...');
-      removeSubscription(subscription.endpoint);
+      await removeSubscription(subscription.endpoint);
     }
     return false;
   }
@@ -175,8 +220,10 @@ export async function sendPushNotification(
 // Check and send due notifications
 export async function checkAndSendDueNotifications(): Promise<number> {
   const now = new Date();
-  const schedules = getSchedules();
-  const subscriptions = getSubscriptions();
+  const schedules = await getSchedules();
+  const subscriptions = await getSubscriptions();
+
+  console.log('[Cron] Checking notifications. Schedules:', schedules.length, 'Subscriptions:', subscriptions.length);
 
   let sentCount = 0;
   const schedulesToRemove: string[] = [];
@@ -185,7 +232,7 @@ export async function checkAndSendDueNotifications(): Promise<number> {
     const scheduledTime = new Date(schedule.scheduledTime);
 
     if (scheduledTime <= now) {
-      console.log('[Push] Sending due notification:', schedule.taskId);
+      console.log('[Push] Sending due notification:', schedule.taskId, 'scheduled for:', scheduledTime.toISOString());
 
       // Find the subscription for this schedule
       const subscription = subscriptions.find(s => s.endpoint === schedule.subscriptionEndpoint);
@@ -200,15 +247,16 @@ export async function checkAndSendDueNotifications(): Promise<number> {
         if (success) {
           sentCount++;
         }
-      } else {
-        // Also send to all subscriptions as fallback
+      } else if (subscriptions.length > 0) {
+        // Send to all subscriptions as fallback
+        console.log('[Push] No matching subscription, sending to all');
         for (const sub of subscriptions) {
-          await sendPushNotification(sub, {
+          const success = await sendPushNotification(sub, {
             title: schedule.title,
             body: schedule.body,
             tag: schedule.taskId,
           });
-          sentCount++;
+          if (success) sentCount++;
         }
       }
 
@@ -218,7 +266,7 @@ export async function checkAndSendDueNotifications(): Promise<number> {
 
   // Remove sent schedules
   for (const id of schedulesToRemove) {
-    removeScheduleById(id);
+    await removeScheduleById(id);
   }
 
   return sentCount;
