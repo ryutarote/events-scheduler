@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @ticket-scheduler/next run build",
+  "buildCommand": "pnpm run build:next",
+  "outputDirectory": "apps/next/.next",
   "framework": "nextjs",
   "crons": [
     {
