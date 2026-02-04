@@ -6,9 +6,9 @@ let vapidConfigured = false;
 
 function getVapidConfig() {
   return {
-    publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-    privateKey: process.env.VAPID_PRIVATE_KEY || '',
-    subject: process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
+    publicKey: (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '').trim(),
+    privateKey: (process.env.VAPID_PRIVATE_KEY || '').trim(),
+    subject: (process.env.VAPID_SUBJECT || 'mailto:admin@example.com').trim(),
   };
 }
 
@@ -279,5 +279,5 @@ export async function checkAndSendDueNotifications(): Promise<number> {
 
 // Get VAPID public key
 export function getVapidPublicKey(): string {
-  return getVapidConfig().publicKey;
+  return getVapidConfig().publicKey.trim();
 }

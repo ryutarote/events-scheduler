@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveSubscription, removeSubscription, getVapidPublicKey } from '@/lib/push';
+import { saveSubscription, removeSubscription, getVapidPublicKey, getSubscriptions } from '@/lib/push';
 
 // Force dynamic rendering to prevent static analysis issues with VAPID keys
 export const dynamic = 'force-dynamic';
 
-// GET - Get VAPID public key
-export async function GET() {
-  const publicKey = getVapidPublicKey();
+// GET - Get VAPID public key or list subscriptions (debug)
+export async function GET(request: NextRequest) {
+  const isDebug = request.nextUrl.searchParams.get('debug') === '1';
+
+  if (isDebug) {
+    const subscriptions = await getSubscriptions();
+    return NextResponse.json({ subscriptions });
+  }
+
+  const publicKey = getVapidPublicKey().trim(); // Remove any trailing newlines
   return NextResponse.json({ publicKey });
 }
 
