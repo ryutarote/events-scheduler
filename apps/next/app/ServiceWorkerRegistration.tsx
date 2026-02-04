@@ -118,51 +118,74 @@ export function ServiceWorkerRegistration() {
 
       // Try to subscribe to push notifications
       try {
-        // Check if Notification permission is granted
-        if (Notification.permission === 'granted') {
-          // Get VAPID public key from server
-          const response = await fetch('/api/push/subscribe');
-          const { publicKey } = await response.json();
+        // Request permission if not already granted
+        let permission = Notification.permission;
+        console.log('[Push] Current notification permission:', permission);
 
-          if (publicKey) {
-            // Check for existing subscription
-            let subscription = await registration.pushManager.getSubscription();
+        if (permission === 'default') {
+          console.log('[Push] Requesting notification permission...');
+          permission = await Notification.requestPermission();
+          console.log('[Push] Permission result:', permission);
+        }
 
-            if (!subscription) {
-              // URL-safe base64 helper
-              const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
-                const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-                const rawData = atob(base64);
-                const outputArray = new Uint8Array(rawData.length);
-                for (let i = 0; i < rawData.length; ++i) {
-                  outputArray[i] = rawData.charCodeAt(i);
-                }
-                return outputArray;
-              };
+        if (permission !== 'granted') {
+          console.warn('[Push] Notification permission not granted:', permission);
+          return;
+        }
 
-              // Subscribe to push
-              const applicationServerKey = urlBase64ToUint8Array(publicKey);
-              subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
-              });
-              console.log('[Push] New subscription created');
-            } else {
-              console.log('[Push] Using existing subscription');
+        // Get VAPID public key from server
+        const response = await fetch('/api/push/subscribe');
+        const data = await response.json();
+        const publicKey = data.publicKey?.trim();
+
+        if (!publicKey) {
+          console.warn('[Push] VAPID public key not available');
+          return;
+        }
+
+        console.log('[Push] VAPID public key received, length:', publicKey.length);
+
+        // Check for existing subscription
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+          // URL-safe base64 helper
+          const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
+            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+              outputArray[i] = rawData.charCodeAt(i);
             }
+            return outputArray;
+          };
 
-            // Save subscription to server
-            await fetch('/api/push/subscribe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(subscription.toJSON()),
-            });
-            console.log('[Push] Subscription saved to server');
-          }
+          // Subscribe to push
+          const applicationServerKey = urlBase64ToUint8Array(publicKey);
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
+          });
+          console.log('[Push] New subscription created');
+        } else {
+          console.log('[Push] Using existing subscription');
+        }
+
+        // Save subscription to server
+        const saveResponse = await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(subscription.toJSON()),
+        });
+
+        if (saveResponse.ok) {
+          console.log('[Push] Subscription saved to server successfully');
+        } else {
+          console.error('[Push] Failed to save subscription:', await saveResponse.text());
         }
       } catch (error) {
-        console.warn('[Push] Failed to subscribe:', error);
+        console.error('[Push] Failed to subscribe:', error);
       }
     });
 
